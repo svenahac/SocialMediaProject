@@ -1,0 +1,4 @@
+"0","df %>% group_by(Age) %>% "
+"0","  summarise(Average_Usage = round(mean(Daily_Usage_Time..minutes.))) %>% "
+"0","  arrange(-Average_Usage) %>%"
+"0","  knitr::kable()"

@@ -1,0 +1,204 @@
+---
+title: "Social Media Usage and Emotional Well-Being"
+subtitle: "Project for Data programming"
+author: "Sven Ahac"
+date: "6.6.2024"
+format: 
+  html:
+    toc: true
+    toc-location: left
+    embed-resources: true
+execute: 
+  warning: false
+  messages: false
+  echo: true
+  error: true
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+```
+
+# Introduction
+
+In this day and age almost everyone uses some kind of social media. With applications like Instagram, Twitter, Facebook and many others users can connect, share experiences and engage in content in ways like never before. However the use of social media also raises important questions about its impact on emotional well-being.
+
+Social media usage has a both negative and positive impact on users emotional health. On the plus side, social media can improve connections, provide social support and foster a sense of community as it allows users to maintain relationships and share personal achievements. On the contrary social media can also contribute to emotional distress. The constant exposure to ideal lifestyle of others can lead to feelings of jealousy and low self esteem. Furthermore, the addictive nature of social media can lead to excessive usage, bad sleeping habits and distancing to face to face interactions.
+
+In this paper i would like to show the usage of social media, time spent on them and what kind of feelings the individuals express while using those apps.
+
+# Presentation of the data
+
+```{r}
+df<-read.csv("data.csv")
+head(df) %>% knitr::kable()
+```
+
+```{r, include=FALSE}
+#Removing an invalid value from the dataset
+df<-subset(df,User_ID != "Tabii")
+```
+
+## Features of the dataset
+
+-   **User_ID**: Unique identifier for the user.
+
+-   **Age**: Age of the user.
+
+-   **Gender**: Gender of the user (Female, Male, Non-binary).
+
+-   **Platform**: Social media platform used (e.g., Instagram, Twitter, Facebook, LinkedIn, Snapchat, Whatsapp, Telegram).
+
+-   **Daily_Usage_Time (minutes)**: Daily time spent on the platform in minutes.
+
+-   **Posts_Per_Day**: Number of posts made per day.
+
+-   **Likes_Received_Per_Day**: Number of likes received per day.
+
+-   **Comments_Received_Per_Day**: Number of comments received per day.
+
+-   **Messages_Sent_Per_Day**: Number of messages sent per day.
+
+-   **Dominant_Emotion**: User's dominant emotional state during the day (e.g., Happiness, Sadness, Anger, Anxiety, Boredom, Neutral).
+
+# Aggregation of data
+
+In this section I will present the data visually using tables and graphs. I will also describe the findings of my data aggregation.
+
+## Grouping by Platforms
+
+```{r}
+df %>% group_by(Platform) %>%
+  summarise(Count=n()) %>% 
+  mutate(Percentage =(Count/nrow(df))*100) %>%
+  arrange(-Percentage) %>%
+  knitr::kable() 
+```
+
+In this section i wanted to show which of the social medias were used and what is their use rate. We can see that the most used three are Instagram at 25%, Twitter at 20% and Facebook at 19%.
+
+## Average daily use by age
+
+```{r}
+df %>% group_by(Age) %>% 
+  summarise(Average_Usage = round(mean(Daily_Usage_Time..minutes.))) %>% 
+  arrange(-Average_Usage) %>%
+  knitr::kable()
+```
+
+To see which age spends the most online I grouped the data by age and calculated an average of daily app usage. From the results we can see that people aged 32 spend the most time using social media.
+
+## Posts per day in correlation to emotion
+
+```{r}
+df %>% group_by(Dominant_Emotion) %>%
+  summarise(Average_Posts_Per_Day = round(mean(Posts_Per_Day),1)) %>%
+  arrange(-Average_Posts_Per_Day) %>%
+  knitr::kable()
+```
+
+We can see that people who make the most posts on average express happiness during the day. It is interesting that happier people on average post 2 more posts per day as people who's dominant expression during the day is anger. It also makes sense that people who are bores post the least as presumably they don't have anything interesting going on.
+
+## Average messages sent by user
+
+```{r}
+df %>%
+  group_by(Dominant_Emotion) %>%
+  summarize(Avg_Messages_Sent = round(sum(Messages_Sent_Per_Day) / n_distinct(User_ID),1)) %>%
+  arrange(-Avg_Messages_Sent) %>%
+  knitr::kable()
+```
+
+By far the users who sent messages the most express happiness on the other side people who express boredom sent the least. The rest of emotions are all close to each other in amount of messages sent by day.
+
+## Total daily usage by gender
+
+```{r}
+sum_by_gender <- df %>%
+  group_by(Gender) %>%
+  summarise(
+    Total_Usage_Time = sum(Daily_Usage_Time..minutes.),
+    Count = n()
+  )
+
+ggplot(sum_by_gender, aes(x = Gender, y = Total_Usage_Time/60, fill = Gender)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = Count), vjust = -0.2) +
+  labs(title="Total daily usage by gender",
+       x = "Gender",
+       y = "Total Daily Usage Time (hours)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+We can observe that on average females spend more time using the apps than men. For non-binary the sample is 100 people smaller so we can't really compare it to the rest.
+
+## Correlation between posts and likes per day
+
+```{r}
+ggplot(df, aes(x = Posts_Per_Day, y = Likes_Received_Per_Day)) +
+  geom_point(aes(colour = Gender),size=2,shape=1) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Correlation between posts and likes per day",
+       x = "Posts Per Day",
+       y = "Likes Received Per Day") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+It is pretty logical that users who post more will receive more likes as we can see in this plot.
+
+## Dominant emotions across platforms
+
+```{r}
+emotion_sum <- df %>%
+  group_by(Platform, Dominant_Emotion) %>%
+  summarise(Count = n()) %>%
+  ungroup() %>%
+  group_by(Platform) %>%
+  mutate(Proportion = Count / sum(Count))
+
+ggplot(emotion_sum, aes(x = Platform, y = Proportion, fill = Dominant_Emotion)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = "Dominant emotions across platforms",
+       x = "Platform",
+       y = "Percentage of users",
+       fill = "Dominant Emotion") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+From this plot we can see that most of the happy users are using Instagram and that happiness isn't expressed while using Facebook and Telegram. Anger is most dominant on Whatsapp and Twitter and not present on Snapchat, Linkedin and Facebook. Boredom is most expressed on Linkedin probably because the platform involves job searching. We can see that the emotions present everywhere are Anxiety and Neutral emotions.
+
+## Average Age by Dominant Emotion and Gender
+
+```{r}
+age_sum <- df %>%
+  group_by(Gender, Dominant_Emotion) %>%
+  summarise(Average_Age = mean(Age)) %>%
+  ungroup()
+
+ggplot(age_sum, aes(x = Dominant_Emotion, y = Average_Age, group = Gender, color = Gender)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  labs(title = "Average Age by Dominant Emotion and Gender",
+       x = "Dominant Emotion",
+       y = "Average Age",
+       color = "Gender") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+We can see that at older ages boredom is expressed more in males and females. Younger people tend to express more neutral and sad emotions. Happiness, Anger and Anxiety are also more prevalent in the older ages. We can also observe that the biggest differences can be observed in females as the line has the biggest difference between ages.
+
+# Conclusion
+
+In this paper i presented Social media usage and emotions connected to it's usage. I used tables and various graphs to display some of the data in different ways.
+
+The findings of this dataset were expected, we can see that people that express happiness engage with social media the most and that people that express boredom do not use social media as much. The only thing that surprised me was the age of users as people in late 20s used social media more than people in early 20s. All in all i think this dataset was a bit too small for any kind of serious analysis.
+
+# References
+
+<https://www.kaggle.com/datasets/emirhanai/social-media-usage-and-emotional-well-being/data>

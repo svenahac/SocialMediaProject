@@ -1,0 +1,10 @@
+"0","ggplot(df, aes(x = Posts_Per_Day, y = Likes_Received_Per_Day)) +"
+"0","  geom_point(aes(colour = Gender),size=2,shape=1) +"
+"0","  geom_smooth(method = ""lm"", se = FALSE) +"
+"0","  labs(title = ""Correlation between posts and likes per day"","
+"0","       x = ""Posts Per Day"","
+"0","       y = ""Likes Received Per Day"") +"
+"0","  theme_minimal() +"
+"0","  theme(plot.title = element_text(hjust = 0.5))"
+"1","[38;5;254m`geom_smooth()` using formula = 'y ~ x'[39m
+"
